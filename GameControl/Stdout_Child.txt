@@ -1,0 +1,10 @@
+Chess
+TimeLimit[0] = 0
+TimeLimit[1] = 0
+TimeLimit[0] = 0
+TimeLimit[1] = 0
+TimeLimit[0] = 0
+TimeLimit[1] = 0
+1. e2e4
+1. ... e7e5
+My move is : e7e5
