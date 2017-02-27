@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#define DEBUG 1
+
 int DeplacementPiece(char *move)
 {
     //PLACEHOLDER, Voir déplacement plus tard
@@ -16,6 +18,7 @@ int main()
 {
     int PipeSortante[2], PipeEntrante[2];
     char message[10], move[5], ordre[20];
+    char settings = DEBUG;
 
     //déclaration des pipes
     pipe(PipeSortante);
@@ -54,7 +57,7 @@ int main()
         FILE *SortieGnuchessFils;
         int nmbrcoup = 1;
         char continuer = 1, loop = 1;
-        char TestCaract = 0, posCaract = 0;
+        char TestCaract = 0; int posCaract = 0;
 
 
         //Ouverture fichier
@@ -66,9 +69,9 @@ int main()
 
 
         //initialisation des chaines de caractères
-        sprintf(message, "0");
-        sprintf(ordre, "0");
-        sprintf(move, "0");
+        memset(message, '\0', strlen(message));
+        memset(ordre, '\0', strlen(ordre));
+        memset(move, '\0', strlen(move));
 
         //dup2(STDIN_FILENO, PipeSortante[1]);
 
@@ -100,8 +103,10 @@ int main()
                     printf("sortie");
                 }
                 //printf("Message lu = %s\nOrdre = %s\nStrccmp = %d", message, move, strncmp(message, move, 4));
-                printf("%c -> %d", message[0], nmbrcoup % 10);
-                printf("loop\n");
+                if (settings ==1) {
+                printf("%c -> %d ", message[0], nmbrcoup % 10);
+                printf("Pas de réponse de Gnuchess pour le moment\n");
+                }
                 sleep(1);
 
             }while(loop == 1); //Tant que le programme n'a pas répondu, on attend
@@ -109,23 +114,35 @@ int main()
             //Relecture pour obtenir les 4 derniers caractères du fichier : on regarde le déplacement gnuchess
             fseek(SortieGnuchessFils, -11, SEEK_END);
             fread(message, 4, 1, SortieGnuchessFils);
+
             if(message[0] == 'm') //Correspond au m dans "Invalid move"
             {
                 printf("Le déplacement est invalide, réessayer.\n");
             }
+
             else { //déplacement accepté par gnuchess
+
+                TestCaract = 0;
+                posCaract = 0;
 
                 DeplacementPiece(move); // on déplace d'abord la pièce : le programme est mis en pause pendant le déplacement (dans la fonction DeplacementPiece()
 
                 //EN TRAVAUX : recupérer le déplacement total de gnuchess
-                while(TestCaract != 32) //tant que le caractère lu n'est pas un espace (32 = code ascii de l'espace
+                while(TestCaract != 32) //tant que le caractère lu n'est pas un espace (32 = code ascii de l'espace)
                 {
                     posCaract--;
-                    fseek(SortieGnuchessFils, posCaract, SEEK_END);
+                    fseek(SortieGnuchessFils, posCaract, SEEK_END); //alors on regarde le caractère d'avant
                     fread(&TestCaract, 1, 1, SortieGnuchessFils);
+                    if (settings == 1)
+                    {
+                    printf("Caractere lu : %d  ", posCaract);
+                    printf("%c  ", TestCaract);
+                    printf("%d\n", TestCaract);
+                    }
+                    //sleep(1);
                 }
                 fseek(SortieGnuchessFils, posCaract, SEEK_END); //on récupère le déplacement exact de gnuchess
-                fread(message, 1, 4, SortieGnuchessFils);
+                fread(message, 1, -posCaract - 1, SortieGnuchessFils);
 
                 printf("Déplacement adversaire : %s\n", message);
 
