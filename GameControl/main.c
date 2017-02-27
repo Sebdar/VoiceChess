@@ -43,7 +43,7 @@ int main()
         stdout = fopen("./Stdout_Child.txt", "w");
         dup2(STDOUT_FILENO, PipeEntrante[1]);
 
-        system("gnuchess -x");
+        system("gnuchess -x"); //on lance gnuchess en mode xboard (controle par commande)
 
         return 0;
     }
