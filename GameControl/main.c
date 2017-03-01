@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define DEBUG 1
+#define DEBUG 1 //Plus tard : à rentrer en argument au lancement du programme
 
 int DeplacementPiece(char *move)
 {
