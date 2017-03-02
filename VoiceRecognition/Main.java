@@ -35,7 +35,7 @@ public class Main {
     public Main() throws IOException {
 
         // Loading Message
-        logger.log(Level.INFO, "Loading..\n");
+        //logger.log(Level.INFO, "Loading..\n");
 
         // Choix de langue du jeu
         int securite = 0;
@@ -69,7 +69,7 @@ public class Main {
         try {
             recognizer = new LiveSpeechRecognizer(configuration);
         } catch (IOException ex) {
-            logger.log(Level.SEVERE, null, ex);
+            //logger.log(Level.SEVERE, null, ex);
         }
 
         // Start recognition process pruning previously cached data.
@@ -100,14 +100,19 @@ public class Main {
                      * reached. Note that the end pointer will determine the end
                      * of speech.
                      */
-                    logger.log(Level.INFO, "Waiting...\n");
+                    //logger.log(Level.INFO, "Waiting...\n");
                     Scanner number = new Scanner(System.in); // Attente d'une réponse du programme mécanisme
                     int saisie = number.nextInt();
-                    logger.log(Level.INFO, "You can start to speak...\n");
+                    if (saisie == 0) {
+                        System.exit(0);
+                    }
+                    
+                    //logger.log(Level.INFO, "You can start to speak...\n");
                     SpeechResult speechResult = recognizer.getResult();
 
                     if (speechResult != null) {
                         result = speechResult.getHypothesis();
+                        
                         
                         if (language == 1) {
                             result = speechResult.getHypothesis().replaceAll("one", "1").replaceAll("two", "2").replaceAll("three", "3").replaceAll("four", "4").replaceAll("five", "5").replaceAll("six", "6").replaceAll("seven", "7").replaceAll("eight", "8");
@@ -115,18 +120,19 @@ public class Main {
                             result = speechResult.getHypothesis().replaceAll("un", "1").replaceAll("deux", "2").replaceAll("trois", "3").replaceAll("quatre", "4").replaceAll("cinq", "5").replaceAll("six", "6").replaceAll("sept", "7").replaceAll("huit", "8");
                         }
 
-                        System.out.println(result);
+                        System.out.println(result.replaceAll(" ", ""));
+                        //System.out.println(result);
 
                     } else {
-                        logger.log(Level.INFO, "Error\n");
+                        //logger.log(Level.INFO, "Error\n");
                     }
 
                 }
             } catch (Exception ex) {
-                logger.log(Level.WARNING, null, ex);
+                //logger.log(Level.WARNING, null, ex);
             }
 
-            logger.log(Level.INFO, "SpeechThread has exited...");
+            //logger.log(Level.INFO, "SpeechThread has exited...");
         }
         );
 
@@ -164,7 +170,7 @@ public class Main {
                 }
 
             } catch (InterruptedException ex) {
-                logger.log(Level.WARNING, null, ex);
+                //logger.log(Level.WARNING, null, ex);
                 resourcesThread.interrupt();
             }
         });
