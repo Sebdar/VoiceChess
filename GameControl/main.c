@@ -63,7 +63,7 @@ void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
     }
     //Mainenant qu'on a la position, on peut récuperer la chaine entière
     read(Entrante, chaine, 10); //on écrit directement dans la chaine fournie en argument
-    return 0;
+    return ;
 }
 
 int main()
@@ -186,7 +186,7 @@ int main()
             }
             else
             {
-                GetVoiceOrder(PipeSortanteJ, PipeEntranteJ, ordre);
+                GetVoiceOrder(PipeSortanteJ[1], PipeEntranteJ[0], ordre);
             }
 
             //si le déplacement est invalide / la syntaxe n'est pas respectée,
@@ -205,7 +205,7 @@ int main()
                     loop = 0;
                     printf("sortie");
                 }
-                //printf("Message lu = %s\nOrdre = %s\nStrccmp = %d", message, move, strncmp(message, move, 4));
+
                 if (settings[0] ==1) {
                 printf("%c -> %d ", message[0], nmbrcoup % 10);
                 printf("Pas de réponse de Gnuchess pour le moment\n");
@@ -262,15 +262,18 @@ int main()
                 printf("Déplacement adversaire : %s\n", message);
 
                 DeplacementPiece(message); //On peut maintenant déplacer la pièce déplacée par gnuchess
+                nmbrcoup++;
             }
 
-            nmbrcoup++; //A réfléchir plus tard : est-ce qu'on compte les coups non réalisés (syntaxe, etc)?
         }
 
         sleep(2);
         write(PipeSortante[1], "quit\n", strlen("quit\n"));
+        write(PipeSortanteJ[1], "0\n", 2);
 
         waitpid(childstatus[1], &status, 0);
+        waitpid(childstatus[2], &status, 0);
+
         return 0;
     }
 
