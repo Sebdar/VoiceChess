@@ -28,21 +28,29 @@ void Debug_AffichVar(char *variable, int longueur)
 
 int main()
 {
-    int PipeSortante[2], PipeEntrante[2];
+    int PipeSortante[2], PipeEntrante[2]; //Préparation des pipes de communiquation
+    int PipeSortanteJ[2], PipeEntranteJ[2];
     char message[10], move[5], ordre[20];
     char settings = DEBUG;
 
     //déclaration des pipes
     pipe(PipeSortante);
     pipe(PipeEntrante);
+    pipe(PipeEntranteJ);
+    pipe(PipeSortanteJ);
 
-    pid_t childstatus;
+    pid_t childstatus[3];
     int status;
 
     //Création du processus enfant : le programme se divise, fork
-    childstatus = fork();
+    childstatus[1] = fork();
 
-    if(childstatus == 0) //child
+    if(childstatus[1] != 0) //Pour le père seulement
+    {
+        childstatus[2] = fork(); //On se redivise encore pouvoir communiquer avec l'appli java
+    }
+
+    if(childstatus[1] == 0) //1er child
     {
         //fermeture des pipes inutiles au child
         close(PipeEntrante[0]);
@@ -62,6 +70,24 @@ int main()
 
         return 0;
     }
+    else if(childstatus[2] == 0) //Deuxième proc fils, utilisé pour communiquer avec l'appli voix
+    {
+        //EN TRAVAUX
+        //Fermeture des pipes inutiles
+        close(PipeEntranteJ[0]);
+        close(PipeSortanteJ[1]);
+
+        //Encore une fois, stdin sera remplacé par la pipe venant du parent
+        fclose(stdin);
+        dup2(PipeSortanteJ[0], STDIN_FILENO);
+        printf("Connexion au parent établie, fermeture de stdout (java)\n");
+
+        fclose(stdout);
+        dup2(STDOUT_FILENO, PipeSortanteJ[1]);
+
+
+        return 0;
+    }
     else //parent
     {
 
@@ -78,6 +104,8 @@ int main()
         //fermeture des pipes inutiles au parent
         close(PipeEntrante[1]);
         close(PipeSortante[0]);
+        close(PipeEntranteJ[1]);
+        close(PipeSortanteJ[0]);
 
 
         //initialisation des chaines de caractères
@@ -136,6 +164,7 @@ int main()
             if(message[0] == 'm') //Correspond au m dans "Invalid move"
             {
                 printf("Le déplacement est invalide, réessayer.\n");
+                printf("%s", message);
             }
 
             else { //déplacement accepté par gnuchess
@@ -178,7 +207,7 @@ int main()
         sleep(2);
         write(PipeSortante[1], "quit\n", strlen("quit\n"));
 
-        waitpid(childstatus, &status, 0);
+        waitpid(childstatus[1], &status, 0);
         return 0;
     }
 
