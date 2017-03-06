@@ -7,8 +7,11 @@
 
 #define DEBUG 1 //Plus tard : à rentrer en argument au lancement du programme
 #define TEXTE 0 //Pour l'instant, on reste en mode saisie par texte
+#define JAVA_PATH ./VoiceRecognition //Chemin de l'application java
 #define JAVA_ORDER NULL //commande à envoyer au cmd pour lancer le programme
                         //A compléter plus tard
+
+char settings[3]; //Les paramètres sont forcément des variables globales, pour que toutes les fonctions y aient accès
 
 int DeplacementPiece(char *move)
 {
@@ -28,6 +31,35 @@ void Debug_AffichVar(char *variable, int longueur)
     }
     printf("\n");
 }
+
+int CompString(char *Str1, char *Str2) //Compare deux chaines, et renvoie le nombre de lettres différentes.
+                                        //Si la taille des chaines est différentre, renvoie -1.
+{
+     if(Str1 == NULL || Str2 == NULL)
+     {
+        return -2; //Renvoie -2 si une des chaines est vide
+     }
+
+     if(strlen(Str1) != strlen(Str2))
+     {
+        return -1;
+     }
+     else
+     {
+        int i;
+        int diff =0;
+        for(i = 0; i < strlen(Str1); i++)
+        {
+            if(Str1[i] != Str2[i])
+            {
+                diff++;
+            }
+        }
+
+        return diff;
+     }
+}
+
 void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
 {
     //variables
@@ -66,14 +98,33 @@ void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
     return ;
 }
 
-int main()
+
+int main(int argc, char *argv[])
 {
     int PipeSortante[2], PipeEntrante[2]; //Préparation des pipes de communiquation
     int PipeSortanteJ[2], PipeEntranteJ[2];
     char message[10], move[5], ordre[20];
-    char settings[3];
-    settings[0] = DEBUG; //0 = fonctionnement normal, 1 = mode debug / Verbose
-    settings[1] = TEXTE; //0 = saisie par texte, 1 = saisie par voix (fonctionnement normal); A REMPLACER PLUS TARD
+
+    //Initialisation des paramètres
+    printf("Acquisition des paramètres\n");
+    if(CompString(argv[1], "-debug") == 0 || CompString(argv[2], "-debug") == 0)
+    {
+        settings[0] = 1; //0 = fonctionnement normal, 1 = mode debug / Verbose
+    }
+    else
+    {
+        settings[0] = 0;
+    }
+    if(CompString(argv[1], "-texte") == 0 || CompString(argv[2], "-texte") == 0)
+    {
+        settings[1] = 0; //0 = saisie par texte, 1 = saisie par voix (fonctionnement normal)
+    }
+    else
+    {
+        settings[1] = 1;
+    }
+
+
 
     //déclaration des pipes
     pipe(PipeSortante);
@@ -87,7 +138,7 @@ int main()
     //Création du processus enfant : le programme se divise, fork
     childstatus[1] = fork();
 
-    if(childstatus[1] != 0) //Pour le père seulement
+    if(childstatus[1] != 0 && settings[1] == 1) //Pour le père seulement, et si on est en mode voix
     {
         childstatus[2] = fork(); //On se redivise encore pouvoir communiquer avec l'appli java
     }
@@ -129,6 +180,7 @@ int main()
         fclose(stdout);
         dup2(STDOUT_FILENO, PipeSortanteJ[1]); //le processus ecrira dans la pipe au lieu de stdout
 
+        system("cd JAVA_PATH"); //On va dans le répertoire de l'application java
         system("JAVA_ORDER"); //Lancement de l'applcation java
 
 
@@ -200,16 +252,17 @@ int main()
             {
                 fseek(SortieGnuchessFils, -8, SEEK_END);
                 fread(message, 4, 1, SortieGnuchessFils);
-                if(message[0] != (nmbrcoup % 10)+48) //Si le programme n'a pas répondu , les derniers caractères
-                {                                    //sont de la forme "1. "ordre""
-                    loop = 0;
-                    printf("sortie");
-                }
 
                 if (settings[0] ==1) {
                 printf("%c -> %d ", message[0], nmbrcoup % 10);
                 printf("Pas de réponse de Gnuchess pour le moment\n");
                 }
+                if(message[0] != (nmbrcoup % 10)+48) //Si le programme n'a pas répondu , les derniers caractères
+                {                                    //sont de la forme "1. "ordre""
+                    loop = 0;
+                    printf("sortie \n");
+                }
+
                 sleep(1);
 
             }while(loop == 1); //Tant que le programme n'a pas répondu, on attend
