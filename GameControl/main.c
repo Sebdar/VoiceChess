@@ -16,7 +16,7 @@ char settings[3]; //Les paramètres sont forcément des variables globales, pour
 char Jeu[8][8]; //Le jeu est stocké en mémoire pour gérer la perte de pièce : si une des coordonnées est déjà occupée, 
                 //alors on enleve une des pièces du jeu.
 
-void InitGame();
+void InitGame(); //initialise le tableau contenant la position de chaque pièce
 {
   int i, j;
   for(i = 0; i <2; i++)
@@ -155,6 +155,8 @@ int main(int argc, char *argv[])
     {
         settings[1] = 1;
     }
+  
+    InitGame();
 
 
 
