@@ -13,6 +13,38 @@
 
 char settings[3]; //Les paramètres sont forcément des variables globales, pour que toutes les fonctions y aient accès
 
+char Jeu[8][8]; //Le jeu est stocké en mémoire pour gérer la perte de pièce : si une des coordonnées est déjà occupée, 
+                //alors on enleve une des pièces du jeu.
+
+void InitGame();
+{
+  int i, j;
+  for(i = 0; i <2; i++)
+  {
+    for(j = 0; j < 8; j++)
+    {
+      Jeu[i][j] = 1;
+    }
+  }
+  
+  for(i = 2; i < 6; i++)
+  {
+    for(j = 0; j < 8; j++)
+    {
+      Jeu[i][j] = 0;
+    }
+  }
+  
+  for(i = 6; i < 8; i++)
+  {
+    for(j = 0; j < 8; j++)
+    {
+      Jeu[i][j] = 1;
+    }
+  }
+  
+}
+
 int DeplacementPiece(char *move)
 {
     //PLACEHOLDER, Voir déplacement plus tard
