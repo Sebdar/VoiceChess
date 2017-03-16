@@ -16,7 +16,9 @@ public class Main {
     private Logger logger = Logger.getLogger(getClass().getName());
 
     // Variables
-    private String result;
+    private String result; // Le résultat obtenue à la source
+    String result_final; // Le résultat final une fois confirmé
+    int language = 0; // Le choix du langage
 
     // Threads
     Thread speechThread;
@@ -25,20 +27,15 @@ public class Main {
     // LiveRecognizer
     private LiveSpeechRecognizer recognizer;
 
-	private Scanner a;
+    private Scanner a;
 
     /**
      * Constructor
      */
-    int language = 0;
-    
     public Main() throws IOException {
 
-        // Loading Message
-        //logger.log(Level.INFO, "Loading..\n");
-
         // Choix de langue du jeu
-        int securite = 0;
+        int securite = 0; // Tant que le langage n'est pas défini correctement par 1 ou 2, le programme ne démarre pas.
         do {
             System.out.println("Choose your language: 1-English 2-French");
             a = new Scanner(System.in);
@@ -51,7 +48,7 @@ public class Main {
         // Configuration
         Configuration configuration = new Configuration();
 
-        // Load model from the jar
+        // Load model from the jar / Selon la langue, les bibliothèques de reconnaissance vocale ne sont pas les mêmes
         if (language == 1) {
             configuration.setAcousticModelPath("resource:/edu/cmu/sphinx/models/en-us/en-us");
             configuration.setDictionaryPath("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
@@ -84,7 +81,6 @@ public class Main {
      * Starting the main Thread of speech recognition
      */
     protected void startSpeechThread() {
-
         // alive?
         if (speechThread != null && speechThread.isAlive()) {
             return;
@@ -95,44 +91,65 @@ public class Main {
             try {
 
                 while (true) {
-                    /*
-                     * This method will return when the end of speech is
-                     * reached. Note that the end pointer will determine the end
-                     * of speech.
-                     */
-                    //logger.log(Level.INFO, "Waiting...\n");
+                    // Ici on démarre réellement le programme
                     Scanner number = new Scanner(System.in); // Attente d'une réponse du programme mécanisme
                     int saisie = number.nextInt();
                     if (saisie == 0) {
+                        // Si la réponse vaut 0, alors le programme s'arrête
                         System.exit(0);
                     }
-                    
-                    //logger.log(Level.INFO, "You can start to speak...\n");
+                    // La reconnaissance vocale commence
                     SpeechResult speechResult = recognizer.getResult();
 
                     if (speechResult != null) {
                         result = speechResult.getHypothesis();
-                        
-                        
+                        // Selon le langage, l'interprétation du résultat est différente
                         if (language == 1) {
                             result = speechResult.getHypothesis().replaceAll("one", "1").replaceAll("two", "2").replaceAll("three", "3").replaceAll("four", "4").replaceAll("five", "5").replaceAll("six", "6").replaceAll("seven", "7").replaceAll("eight", "8");
+                            result_final = result.replaceAll(" ", "");
+                            System.out.println("Is that what you said: " + result.replaceAll(" ", "") + "?");
                         } else {
                             result = speechResult.getHypothesis().replaceAll("un", "1").replaceAll("deux", "2").replaceAll("trois", "3").replaceAll("quatre", "4").replaceAll("cinq", "5").replaceAll("six", "6").replaceAll("sept", "7").replaceAll("huit", "8");
+                            result_final = result.replaceAll(" ", "");
+                            System.out.println("Vous confirmez les coordonnées " + result.replaceAll(" ", "") + "?");
+                        }
+                    } else {
+                        logger.log(Level.INFO, "Error\n");
+                    }
+
+                    // initialise
+                    speechThread = new Thread(() -> {
+                        try {
+                        // Si le résultat est confirmé ou non par le joueur, alors
+                            SpeechResult speechResult2 = recognizer.getResult();
+                            if (speechResult2 != null) {
+                                result = speechResult2.getHypothesis();
+                                if ("oui".equals(result) || "yes".equals(result)) {
+                                    System.out.println(result_final);
+                                } else {
+                                    System.out.println("wrong");
+                                }
+
+                            } else {
+                            }
+
+                        } catch (Exception ex) {
+                            logger.log(Level.WARNING, null, ex);
                         }
 
-                        System.out.println(result.replaceAll(" ", ""));
-                        //System.out.println(result);
-
-                    } else {
-                        //logger.log(Level.INFO, "Error\n");
+                        logger.log(Level.INFO, "SpeechThread111");
                     }
+                    );
+
+                    // Start
+                    speechThread.start();
 
                 }
             } catch (Exception ex) {
-                //logger.log(Level.WARNING, null, ex);
+                logger.log(Level.WARNING, null, ex);
             }
 
-            //logger.log(Level.INFO, "SpeechThread has exited...");
+            logger.log(Level.INFO, "SpeechThread222");
         }
         );
 
