@@ -44,10 +44,24 @@ void InitGame(); //initialise le tableau contenant la position de chaque pièce
   }
   
 }
-
-int DeplacementPiece(char *move)
+void SupprimerPiece(char Coord_x, char Coord_y)
 {
-    //PLACEHOLDER, Voir déplacement plus tard
+  //PLACEHOLDER
+}
+
+int DeplacementPiece(char *move) //PLACEHOLDER, Voir déplacement plus tard
+{
+    char coords[4];
+    //Acquisition du déplacement en coordonées en nombres
+    coords[0] = move[0] - 97; //Les coordonnées exprimées en lettres sont converties en nombres
+    coords[2] = move[2] - 97; //de 0 à 7
+    coords[1] = move[1] - 49; //Les nombres de 1 à 8 sont ramenés en nombres de 0 à 7
+    coords[3] = move[3] - 49;
+    
+    if(Jeu[coords[2]][coords[3]] == 1) //Si la position où va la pièce est déjà occupée par une autre
+    {                                  //On élimine la pièce
+      SupprimerPiece(coords[2], coords[3]);
+    }
     sleep(2);
     return 0;
 }
@@ -99,7 +113,7 @@ void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
     char CaracLu = 0;
     int position = 0;
 
-    write(Sortante, "1\n", 2); //On envoie au programme que l'on peut arrêter
+    write(Sortante, "1\n", 2); //On envoie au programme que l'on peut commencer à écouter
 
     usleep(50000); //On attend 50 ms
     while(continuer == 1) //On attend tant que le programme n'a par répondu
@@ -133,7 +147,7 @@ void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
 
 int main(int argc, char *argv[])
 {
-    int PipeSortante[2], PipeEntrante[2]; //Préparation des pipes de communiquation
+    int PipeSortante[2], PipeEntrante[2]; //Préparation des pipes de communication
     int PipeSortanteJ[2], PipeEntranteJ[2];
     char message[10], move[5], ordre[20];
 
@@ -156,7 +170,7 @@ int main(int argc, char *argv[])
         settings[1] = 1;
     }
   
-    InitGame();
+    InitGame(); //On réinitialise la partie, en replaçant les pièces
 
 
 
@@ -253,7 +267,7 @@ int main(int argc, char *argv[])
         sleep(1);
         write(PipeSortante[1], "new \n", strlen("Xboard \n"));
         sleep(1);
-        printf("waiting\n"); // le programme est prêt à recevoir des ordres
+        printf("waiting\n"); // le programme est prêt à recevoir des ordres de déplacement
 
         while(continuer == 1)
         {
@@ -352,7 +366,7 @@ int main(int argc, char *argv[])
                 nmbrcoup++;
             }
 
-        }
+        } //On recommence maintenant, tant que continuer == 1
 
         sleep(2);
         write(PipeSortante[1], "quit\n", strlen("quit\n"));
