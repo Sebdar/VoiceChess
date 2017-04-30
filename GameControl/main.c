@@ -74,18 +74,34 @@ void DeplacementAimant(char Coord_x, char Coord_y) //Les coordonnées manipulée
 void CommandeAimant(char Mode);
 {
     wiringPiI2CWrite(ArduFd, -1);
-    if(wiringPiI2CRead(ArduFd) = )
+    if(wiringPiI2CRead(ArduFd) = 1 && Mode == 1)
+    {
+        if(settings[0] == 1)
+        {
+            printf("Electro-Aimant allumé\n");
+        }
+    }
+    else if(wiringPiI2CRead(ArduFd) = 0 && Mode == 0)
+    {
+        if(settings[0] == 1)
+        {
+            printf("Electro-Aimant éteint\n");
+        }
+    }
+    else{wiringPiI2CWrite(ArduFd, -1);}
 }
+
 void SupprimerPiece(char Coord_x, char Coord_y)
 {
     //PLACEHOLDER
 }
 
 
-int DeplacementPiece(char *move) //PLACEHOLDER, Voir déplacement plus tard
+int DeplacementPiece(char *move) //Fonction utilisée pour déplacer les pièces
 {
     char coords[4];
     char MoveType = 0;
+    char Droit = 0; //Si le déplacement est en ligne
     //Acquisition du déplacement en coordonées en nombres
     coords[0] = move[0] - 97; //Les coordonnées exprimées en lettres sont converties en nombres
     coords[2] = move[2] - 97; //de 0 à 7
@@ -100,16 +116,49 @@ int DeplacementPiece(char *move) //PLACEHOLDER, Voir déplacement plus tard
 
 
     //DEPLACEMENT INITIAL
-    DeplacerAimant((coords[0]*2) + 1, (coords[1]*2) + 1);
-    CommandeAimant
-    if(coords[2] - coords[0] >= 0) //Déplacement vers la droite en x
+    DeplacerAimant((coords[0]*2) + 1, (coords[1]*2) + 1); //On déplace l'aimant sous la pièce à déplacer
+    CommandeAimant(1); //On allume l'aimant, désormais sous la pièce
+    if(coords[2] - coords[0] >= 0) //Déplacement vers la droite en x (ou nul)
     {
         if(coords[3] - coords[1] >= 0) //Déplacement initial en haut à droite
         {
-
+            DeplacementAimant((coords[0]*2) + 2, (coords[1]*2) + 2);
+            MoveType = 1;
+        }
+        else //Déplacement initial en bas à droite
+        {
+            DeplacementAimant((coords[0]*2) + 1, (coords[1]*2));
+            MoveType = 2;
         }
     }
-    sleep(2);
+    else //Déplacement initial vers la gauche en x
+    {
+        if(coords[3] - coords[1] >= 0) //Déplacement initial en haut à gauche
+        {
+            DeplacementAimant((coords[0]*2), (coords[1]*2) + 2);
+            MoveType = 3;
+        }
+        else //Déplacement initial en bas à gauche
+        {
+            DeplacementAimant((coords[0]*2) + 1, (coords[1]*2) - 1);
+            MoveType = 4;
+        }
+    }
+
+    if(coords[2] - coords[0] == 0)
+    {
+        Droit = 1; //Déplacement nul en x
+    }
+    else if(coords[3] - coords[1] == 0)
+    {
+        Droit = 2; //Déplacement nul en y
+    }
+    //L'aimant est maintenant dans un des interstices (Indiqué dans MoveType)
+
+    //Déplacement principal
+    DeplacementAimant((coords[0] + (coords[0] - coords[2] - 1))*2 +1, (coords[1] + (coords[1] - coords[3] - 1))*2 + 1);
+    //Replacement au centre
+    DeplacementAimant((coords[1]*2) +1, (coords[3]*2) +1);
     return 0;
 }
 void Debug_AffichVar(char *variable, int longueur)
