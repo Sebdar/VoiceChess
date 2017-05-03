@@ -215,7 +215,6 @@ int main(int argc, char *argv[])
     }
     else if(childstatus[2] == 0) //Deuxième proc fils, utilisé pour communiquer avec l'appli de reco de voix
     {
-        //EN TRAVAUX
         //Fermeture des pipes inutiles
         close(PipeEntranteJ[0]);
         close(PipeSortanteJ[1]);
