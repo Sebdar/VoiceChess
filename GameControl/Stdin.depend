@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1485425859 source:/home/pi/Desktop/Projet Echiquier/Stdin/main.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<string.h>
+	<sys/types.h>
+	<sys/wait.h>
+
