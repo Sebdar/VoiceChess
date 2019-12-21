@@ -4,65 +4,161 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 
+#define ARDUADRESS 0x08
 #define DEBUG 1 //Plus tard : à rentrer en argument au lancement du programme
 #define TEXTE 0 //Pour l'instant, on reste en mode saisie par texte
 #define JAVA_PATH ./VoiceRecognition //Chemin de l'application java
 #define JAVA_ORDER NULL //commande à envoyer au cmd pour lancer le programme
-                        //A compléter plus tard
+//A compléter plus tard
+//Initialisation I²C
+int ArduFd = 0;
+ArduFd = wiringPiI2CSetup(ARDUADRESS);
 
+//Variables globales
 char settings[3]; //Les paramètres sont forcément des variables globales, pour que toutes les fonctions y aient accès
 
-char Jeu[8][8]; //Le jeu est stocké en mémoire pour gérer la perte de pièce : si une des coordonnées est déjà occupée, 
-                //alors on enleve une des pièces du jeu.
+char Jeu[8][8]; //Le jeu est stocké en mémoire pour gérer la perte de pièce : si une des coordonnées est déjà occupée,
+//alors on enleve une des pièces du jeu.
 
 void InitGame(); //initialise le tableau contenant la position de chaque pièce
 {
-  int i, j;
-  for(i = 0; i <2; i++)
-  {
-    for(j = 0; j < 8; j++)
+    int i, j;
+    for(i = 0; i <2; i++)
     {
-      Jeu[i][j] = 1;
+        for(j = 0; j < 8; j++)
+        {
+            Jeu[i][j] = 1;
+        }
     }
-  }
-  
-  for(i = 2; i < 6; i++)
-  {
-    for(j = 0; j < 8; j++)
+
+    for(i = 2; i < 6; i++)
     {
-      Jeu[i][j] = 0;
+        for(j = 0; j < 8; j++)
+        {
+            Jeu[i][j] = 0;
+        }
     }
-  }
-  
-  for(i = 6; i < 8; i++)
-  {
-    for(j = 0; j < 8; j++)
+
+    for(i = 6; i < 8; i++)
     {
-      Jeu[i][j] = 1;
+        for(j = 0; j < 8; j++)
+        {
+            Jeu[i][j] = 1;
+        }
     }
-  }
-  
-}
-void SupprimerPiece(char Coord_x, char Coord_y)
-{
-  //PLACEHOLDER
+    DeplacementAimant(0, 0);
+
 }
 
-int DeplacementPiece(char *move) //PLACEHOLDER, Voir déplacement plus tard
+void DeplacementAimant(char Coord_x, char Coord_y) //Les coordonnées manipulées prennent en compte les interstices des cases
+//Reste encore des coordonnées absolues
+{
+    do {
+    wiringPiI2CWrite(ArduFd, -2); //Mode transmission de coordonnées
+    usleep(2000);
+    wiringPiI2CWrite(ArduFd, Coord_x);
+    usleep(2000);
+    wiringPiI2CWrite(ArduFd, Coord_y);
+    usleep(2000);
+    wiringPiI2CWrite(ArduFd, -3);
+    if(settings[0] == 1)
+    {
+    printf("Envoi I2C (possible échec si répétition)\n"); }
+
+    } while(wiringPiI2CRead(ArduFd) != 1);
+
+}
+void CommandeAimant(char Mode);
+{
+    wiringPiI2CWrite(ArduFd, -1);
+    if(wiringPiI2CRead(ArduFd) = 1 && Mode == 1)
+    {
+        if(settings[0] == 1)
+        {
+            printf("Electro-Aimant allumé\n");
+        }
+    }
+    else if(wiringPiI2CRead(ArduFd) = 0 && Mode == 0)
+    {
+        if(settings[0] == 1)
+        {
+            printf("Electro-Aimant éteint\n");
+        }
+    }
+    else{wiringPiI2CWrite(ArduFd, -1);}
+}
+
+void SupprimerPiece(char Coord_x, char Coord_y)
+{
+    //PLACEHOLDER
+}
+
+
+int DeplacementPiece(char *move) //Fonction utilisée pour déplacer les pièces
 {
     char coords[4];
+    char MoveType = 0;
+    char Droit = 0; //Si le déplacement est en ligne
     //Acquisition du déplacement en coordonées en nombres
     coords[0] = move[0] - 97; //Les coordonnées exprimées en lettres sont converties en nombres
     coords[2] = move[2] - 97; //de 0 à 7
     coords[1] = move[1] - 49; //Les nombres de 1 à 8 sont ramenés en nombres de 0 à 7
     coords[3] = move[3] - 49;
-    
+
     if(Jeu[coords[2]][coords[3]] == 1) //Si la position où va la pièce est déjà occupée par une autre
-    {                                  //On élimine la pièce
-      SupprimerPiece(coords[2], coords[3]);
+    {
+        //On élimine la pièce
+        SupprimerPiece(coords[2], coords[3]);
     }
-    sleep(2);
+
+
+    //DEPLACEMENT INITIAL
+    DeplacerAimant((coords[0]*2) + 1, (coords[1]*2) + 1); //On déplace l'aimant sous la pièce à déplacer
+    CommandeAimant(1); //On allume l'aimant, désormais sous la pièce
+    if(coords[2] - coords[0] >= 0) //Déplacement vers la droite en x (ou nul)
+    {
+        if(coords[3] - coords[1] >= 0) //Déplacement initial en haut à droite
+        {
+            DeplacementAimant((coords[0]*2) + 2, (coords[1]*2) + 2);
+            MoveType = 1;
+        }
+        else //Déplacement initial en bas à droite
+        {
+            DeplacementAimant((coords[0]*2) + 1, (coords[1]*2));
+            MoveType = 2;
+        }
+    }
+    else //Déplacement initial vers la gauche en x
+    {
+        if(coords[3] - coords[1] >= 0) //Déplacement initial en haut à gauche
+        {
+            DeplacementAimant((coords[0]*2), (coords[1]*2) + 2);
+            MoveType = 3;
+        }
+        else //Déplacement initial en bas à gauche
+        {
+            DeplacementAimant((coords[0]*2) + 1, (coords[1]*2) - 1);
+            MoveType = 4;
+        }
+    }
+
+    if(coords[2] - coords[0] == 0)
+    {
+        Droit = 1; //Déplacement nul en x
+    }
+    else if(coords[3] - coords[1] == 0)
+    {
+        Droit = 2; //Déplacement nul en y
+    }
+    //L'aimant est maintenant dans un des interstices (Indiqué dans MoveType)
+
+    //Déplacement principal
+    DeplacementAimant((coords[0] + (coords[0] - coords[2] - 1))*2 +1, (coords[1] + (coords[1] - coords[3] - 1))*2 + 1);
+    //Replacement au centre
+    DeplacementAimant((coords[1]*2) +1, (coords[3]*2) +1);
     return 0;
 }
 void Debug_AffichVar(char *variable, int longueur)
@@ -79,19 +175,19 @@ void Debug_AffichVar(char *variable, int longueur)
 }
 
 int CompString(char *Str1, char *Str2) //Compare deux chaines, et renvoie le nombre de lettres différentes.
-                                        //Si la taille des chaines est différentre, renvoie -1.
+//Si la taille des chaines est différentre, renvoie -1.
 {
-     if(Str1 == NULL || Str2 == NULL)
-     {
+    if(Str1 == NULL || Str2 == NULL)
+    {
         return -2; //Renvoie -2 si une des chaines est vide
-     }
+    }
 
-     if(strlen(Str1) != strlen(Str2))
-     {
+    if(strlen(Str1) != strlen(Str2))
+    {
         return -1;
-     }
-     else
-     {
+    }
+    else
+    {
         int i;
         int diff =0;
         for(i = 0; i < strlen(Str1); i++)
@@ -103,7 +199,7 @@ int CompString(char *Str1, char *Str2) //Compare deux chaines, et renvoie le nom
         }
 
         return diff;
-     }
+    }
 }
 
 void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
@@ -122,7 +218,8 @@ void GetVoiceOrder(int Sortante, int Entrante, char *chaine)
         lseek(Entrante, -1, SEEK_END);
         read(Entrante, &CaracLu, 1);
         if(CaracLu != 49)  //Si le caractère lu est différent du retour à la ligne envoyé par l'appli java
-        {                  //A verifier avec le prog de maxence mais devrait fonctionner
+        {
+            //A verifier avec le prog de maxence mais devrait fonctionner
             continuer = 0;
         }
     }
@@ -151,11 +248,17 @@ int main(int argc, char *argv[])
     int PipeSortanteJ[2], PipeEntranteJ[2];
     char message[10], move[5], ordre[20];
 
+    if(ArduFd == -1)
+    {
+        printf("Erreur de connexion i2c, le déplacement ne fonctionnera pas\nConsulter errno\n");
+    }
+
     //Initialisation des paramètres
     printf("Acquisition des paramètres\n");
     if(CompString(argv[1], "-debug") == 0 || CompString(argv[2], "-debug") == 0)
     {
         settings[0] = 1; //0 = fonctionnement normal, 1 = mode debug / Verbose
+        printf("Mode Debug\n");
     }
     else
     {
@@ -169,8 +272,8 @@ int main(int argc, char *argv[])
     {
         settings[1] = 1;
     }
-  
-    InitGame(); //On réinitialise la partie, en replaçant les pièces
+
+    InitGame(); //On réinitialise la partie, en replaçant les pièces et l'aimant
 
 
 
@@ -240,7 +343,8 @@ int main(int argc, char *argv[])
         FILE *SortieGnuchessFils;
         int nmbrcoup = 1;
         char continuer = 1, loop = 1;
-        char TestCaract = 0; int posCaract = 0;
+        char TestCaract = 0;
+        int posCaract = 0;
 
 
         //Ouverture fichier
@@ -300,19 +404,22 @@ int main(int argc, char *argv[])
                 fseek(SortieGnuchessFils, -8, SEEK_END);
                 fread(message, 4, 1, SortieGnuchessFils);
 
-                if (settings[0] ==1) {
-                printf("%c -> %d ", message[0], nmbrcoup % 10);
-                printf("Pas de réponse de Gnuchess pour le moment\n");
+                if (settings[0] ==1)
+                {
+                    printf("%c -> %d ", message[0], nmbrcoup % 10);
+                    printf("Pas de réponse de Gnuchess pour le moment\n");
                 }
                 if(message[0] != (nmbrcoup % 10)+48) //Si le programme n'a pas répondu , les derniers caractères
-                {                                    //sont de la forme "1. "ordre""
+                {
+                    //sont de la forme "1. "ordre""
                     loop = 0;
                     printf("sortie \n");
                 }
 
                 sleep(1);
 
-            }while(loop == 1); //Tant que le programme n'a pas répondu, on attend
+            }
+            while(loop == 1);  //Tant que le programme n'a pas répondu, on attend
             printf("\n");
 
             //Ré-ré-initialisation des chaines de caractères (encore ...)
@@ -330,15 +437,19 @@ int main(int argc, char *argv[])
                 printf("%s", message);
             }
 
-            else { //déplacement accepté par gnuchess
+            else   //déplacement accepté par gnuchess
+            {
 
                 TestCaract = 0;
                 posCaract = 0;
 
-                if(settings[0] == 1) {Debug_AffichVar(message, 10);}
+                if(settings[0] == 1)
+                {
+                    Debug_AffichVar(message, 10);
+                }
 
                 DeplacementPiece(move); // on déplace d'abord la pièce : le programme est mis en pause pendant
-                                        //le déplacement (dans la fonction DeplacementPiece()
+                //le déplacement (dans la fonction DeplacementPiece()
 
                 while(TestCaract != 32) //tant que le caractère lu n'est pas un espace (32 = code ascii de l'espace)
                 {
@@ -347,9 +458,9 @@ int main(int argc, char *argv[])
                     fread(&TestCaract, 1, 1, SortieGnuchessFils);
                     if (settings[0] == 1)
                     {
-                    printf("Caractere lu : %d  ", posCaract);
-                    printf("%c  ", TestCaract);
-                    printf("%d\n", TestCaract);
+                        printf("Caractere lu : %d  ", posCaract);
+                        printf("%c  ", TestCaract);
+                        printf("%d\n", TestCaract);
                     }
                     //sleep(1);
                 }
@@ -357,7 +468,10 @@ int main(int argc, char *argv[])
                 fseek(SortieGnuchessFils, posCaract, SEEK_END); //on récupère le déplacement exact de gnuchess
                 fread(message, 1, -posCaract, SortieGnuchessFils);
 
-                if(settings[0] == 1) {Debug_AffichVar(message, 10);}
+                if(settings[0] == 1)
+                {
+                    Debug_AffichVar(message, 10);
+                }
 
                 printf("Déplacement adversaire : %s\n", message);
 
